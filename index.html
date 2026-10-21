@@ -14,19 +14,71 @@
     <h1>Autenticador 2FA</h1>
   </header>
 
-  <main id="account-list" class="account-list" aria-live="polite">
+  <main id="account-list" class="account-list">
     <p class="empty-state" id="empty-state">Nenhuma conta ainda. Toque em "+" para escanear um QR code.</p>
   </main>
 
+  <p id="status-live" class="sr-only" role="status" aria-live="polite"></p>
+
   <button id="btn-add" class="fab" aria-label="Adicionar conta">+</button>
+
+  <div id="toast" class="toast" hidden></div>
 
   <dialog id="scan-dialog" class="scan-dialog">
     <div class="scan-box">
       <video id="scan-video" playsinline muted></video>
       <canvas id="scan-canvas" hidden></canvas>
       <p id="scan-error" class="scan-error" hidden></p>
+      <button type="button" id="btn-manual-entry" class="btn-link">Inserir chave manualmente</button>
       <button id="btn-cancel-scan" class="btn-secondary">Cancelar</button>
     </div>
+  </dialog>
+
+  <dialog id="manual-dialog" class="confirm-dialog">
+    <form id="manual-form">
+      <h2>Inserir manualmente</h2>
+      <label class="field">
+        <span>Chave secreta</span>
+        <input type="text" id="manual-secret" required autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ex: WW4I XMG4 OGMM 5GGH" />
+      </label>
+      <label class="field">
+        <span>Conta</span>
+        <input type="text" id="manual-account" required autocomplete="off" placeholder="ex: usuario@email.com" />
+      </label>
+      <label class="field">
+        <span>Emissor (opcional)</span>
+        <input type="text" id="manual-issuer" autocomplete="off" placeholder="ex: Google" />
+      </label>
+      <details class="manual-advanced">
+        <summary>Opções avançadas</summary>
+        <div class="manual-advanced-grid">
+          <label class="field-inline">
+            <span>Dígitos</span>
+            <select id="manual-digits">
+              <option value="6" selected>6</option>
+              <option value="8">8</option>
+            </select>
+          </label>
+          <label class="field-inline">
+            <span>Período (s)</span>
+            <input type="number" id="manual-period" value="30" min="10" max="120" />
+          </label>
+          <label class="field-inline">
+            <span>Algoritmo</span>
+            <select id="manual-algorithm">
+              <option value="SHA1" selected>SHA1</option>
+              <option value="SHA256">SHA256</option>
+              <option value="SHA512">SHA512</option>
+            </select>
+          </label>
+        </div>
+      </details>
+      <p id="manual-error" class="scan-error" hidden></p>
+      <div class="confirm-actions">
+        <button type="button" id="btn-cancel-manual" class="btn-secondary">Cancelar</button>
+        <button type="submit" class="btn-primary">Adicionar</button>
+      </div>
+    </form>
   </dialog>
 
   <dialog id="confirm-dialog" class="confirm-dialog">

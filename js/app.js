@@ -1,4 +1,4 @@
-import { generateTOTP, secondsRemaining, parseOtpAuthUri } from "./totp.js";
+import { generateTOTP, secondsRemaining, parseOtpAuthUri, base32Decode } from "./totp.js";
 import { addAccount, getAllAccounts, deleteAccount } from "./db.js";
 import { startScan, stopScan } from "./qr.js";
 
@@ -15,6 +15,19 @@ const confirmForm = document.getElementById("confirm-form");
 const confirmIssuer = document.getElementById("confirm-issuer");
 const confirmAccount = document.getElementById("confirm-account");
 const btnCancelConfirm = document.getElementById("btn-cancel-confirm");
+const statusLiveEl = document.getElementById("status-live");
+const toastEl = document.getElementById("toast");
+const btnManualEntry = document.getElementById("btn-manual-entry");
+const manualDialog = document.getElementById("manual-dialog");
+const manualForm = document.getElementById("manual-form");
+const manualSecret = document.getElementById("manual-secret");
+const manualAccount = document.getElementById("manual-account");
+const manualIssuer = document.getElementById("manual-issuer");
+const manualDigits = document.getElementById("manual-digits");
+const manualPeriod = document.getElementById("manual-period");
+const manualAlgorithm = document.getElementById("manual-algorithm");
+const manualError = document.getElementById("manual-error");
+const btnCancelManual = document.getElementById("btn-cancel-manual");
 
 let accounts = [];
 let pendingAccount = null;
@@ -38,16 +51,19 @@ function renderList() {
         <div class="account-name">${escapeHtml(account.account)}</div>
       </div>
       <div class="account-right">
-        <span class="account-code">------</span>
-        <svg class="account-timer" viewBox="0 0 36 36">
+        <div>
+          <button type="button" class="account-code" aria-label="Copiar código">------</button>
+          <span class="copy-hint" aria-hidden="true">tocar para copiar</span>
+        </div>
+        <svg class="account-timer" viewBox="0 0 36 36" aria-hidden="true">
           <circle cx="18" cy="18" r="15" fill="none" stroke="#3a3f4a" stroke-width="3"></circle>
           <circle class="timer-progress" cx="18" cy="18" r="15" fill="none" stroke="#5b8cff" stroke-width="3"
             stroke-dasharray="94.2" stroke-dashoffset="0" transform="rotate(-90 18 18)"></circle>
         </svg>
-        <button class="btn-delete" title="Remover">🗑</button>
+        <button class="btn-delete" aria-label="Remover conta">🗑</button>
       </div>
     `;
-    card.querySelector(".account-code").addEventListener("click", () => copyCode(card));
+    card.querySelector(".account-code").addEventListener("click", () => copyCode(card, account));
     card.querySelector(".btn-delete").addEventListener("click", (e) => {
       e.stopPropagation();
       removeAccount(account.id);
@@ -62,13 +78,28 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-async function copyCode(card) {
+let toastTimer = null;
+
+function showToast(message) {
+  clearTimeout(toastTimer);
+  toastEl.textContent = message;
+  toastEl.hidden = false;
+  requestAnimationFrame(() => toastEl.classList.add("visible"));
+  toastTimer = setTimeout(() => {
+    toastEl.classList.remove("visible");
+    setTimeout(() => (toastEl.hidden = true), 150);
+  }, 1500);
+}
+
+async function copyCode(card, account) {
   const codeEl = card.querySelector(".account-code");
   try {
     await navigator.clipboard.writeText(codeEl.textContent);
-    codeEl.title = "Copiado!";
+    const label = account.issuer || account.account || "conta";
+    showToast(`Código de ${label} copiado`);
+    statusLiveEl.textContent = `Código copiado para ${label}`;
   } catch {
-    /* clipboard indisponível, ignora */
+    showToast("Não foi possível copiar o código");
   }
 }
 
@@ -125,6 +156,55 @@ function onScanError(err) {
   scanError.textContent = "Não foi possível acessar a câmera: " + err.message;
   scanError.hidden = false;
 }
+
+btnManualEntry.addEventListener("click", () => {
+  stopScan();
+  scanDialog.close();
+  manualForm.reset();
+  manualError.hidden = true;
+  manualDialog.showModal();
+  manualSecret.focus();
+});
+
+btnCancelManual.addEventListener("click", () => {
+  manualDialog.close();
+});
+
+function normalizeSecret(raw) {
+  return raw.toUpperCase().replace(/[^A-Z2-7]/g, "");
+}
+
+manualForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const secret = normalizeSecret(manualSecret.value);
+  const account = manualAccount.value.trim();
+  const issuer = manualIssuer.value.trim();
+  const digits = parseInt(manualDigits.value, 10);
+  const period = parseInt(manualPeriod.value, 10) || 30;
+  const algorithm = manualAlgorithm.value;
+
+  if (!secret || base32Decode(secret).length === 0) {
+    manualError.textContent = "Chave secreta inválida. Verifique e tente novamente.";
+    manualError.hidden = false;
+    return;
+  }
+
+  const newAccount = { issuer, account, secret, algorithm, digits, period };
+  try {
+    await generateTOTP(secret, { digits, period, algorithm });
+  } catch {
+    manualError.textContent = "Não foi possível gerar um código com essa chave.";
+    manualError.hidden = false;
+    return;
+  }
+
+  await addAccount(newAccount);
+  await loadAndRender();
+  manualDialog.close();
+  const label = issuer || account || "conta";
+  showToast(`${label} adicionada`);
+  statusLiveEl.textContent = `Conta ${label} adicionada`;
+});
 
 btnCancelConfirm.addEventListener("click", () => {
   pendingAccount = null;

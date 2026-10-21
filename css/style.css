@@ -6,7 +6,17 @@
   --text-dim: #9a9ea8;
   --accent: #5b8cff;
   --danger: #ff5b6e;
+  --success: #3ddc84;
   --radius: 14px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 
 * { box-sizing: border-box; }
@@ -82,6 +92,31 @@ body {
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  background: none;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0.25rem 0.1rem;
+}
+
+.account-code:hover,
+.account-code:focus-visible {
+  color: var(--accent);
+}
+
+.account-code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.copy-hint {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-align: right;
+  margin-top: 0.1rem;
 }
 
 .account-right {
@@ -102,7 +137,11 @@ body {
   color: var(--text-dim);
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.25rem;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-delete:hover {
@@ -175,6 +214,28 @@ dialog::backdrop {
   margin-top: 1rem;
 }
 
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 5.5rem;
+  transform: translateX(-50%) translateY(8px);
+  background: var(--success);
+  color: #0d2016;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .btn-primary, .btn-secondary {
   padding: 0.55rem 1.1rem;
   border-radius: 8px;
@@ -192,4 +253,71 @@ dialog::backdrop {
   background: transparent;
   color: var(--text-dim);
   border: 1px solid #3a3f4a;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  text-decoration: underline;
+}
+
+#manual-form {
+  padding: 1.25rem 1.5rem;
+  width: min(340px, 85vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+#manual-form h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.field input, .field-inline input, .field-inline select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid #3a3f4a;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.field input:focus, .field-inline input:focus, .field-inline select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.manual-advanced summary {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.manual-advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.field-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
 }
