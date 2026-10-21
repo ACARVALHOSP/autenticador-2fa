@@ -14,11 +14,15 @@
     <h1>Autenticador 2FA</h1>
   </header>
 
-  <main id="account-list" class="account-list" aria-live="polite">
+  <main id="account-list" class="account-list">
     <p class="empty-state" id="empty-state">Nenhuma conta ainda. Toque em "+" para escanear um QR code.</p>
   </main>
 
+  <p id="status-live" class="sr-only" role="status" aria-live="polite"></p>
+
   <button id="btn-add" class="fab" aria-label="Adicionar conta">+</button>
+
+  <div id="toast" class="toast" hidden></div>
 
   <dialog id="scan-dialog" class="scan-dialog">
     <div class="scan-box">
