@@ -1,4 +1,4 @@
-import { generateTOTP, secondsRemaining, parseOtpAuthUri } from "./totp.js";
+import { generateTOTP, secondsRemaining, parseOtpAuthUri, base32Decode } from "./totp.js";
 import { addAccount, getAllAccounts, deleteAccount } from "./db.js";
 import { startScan, stopScan } from "./qr.js";
 
@@ -17,6 +17,17 @@ const confirmAccount = document.getElementById("confirm-account");
 const btnCancelConfirm = document.getElementById("btn-cancel-confirm");
 const statusLiveEl = document.getElementById("status-live");
 const toastEl = document.getElementById("toast");
+const btnManualEntry = document.getElementById("btn-manual-entry");
+const manualDialog = document.getElementById("manual-dialog");
+const manualForm = document.getElementById("manual-form");
+const manualSecret = document.getElementById("manual-secret");
+const manualAccount = document.getElementById("manual-account");
+const manualIssuer = document.getElementById("manual-issuer");
+const manualDigits = document.getElementById("manual-digits");
+const manualPeriod = document.getElementById("manual-period");
+const manualAlgorithm = document.getElementById("manual-algorithm");
+const manualError = document.getElementById("manual-error");
+const btnCancelManual = document.getElementById("btn-cancel-manual");
 
 let accounts = [];
 let pendingAccount = null;
@@ -145,6 +156,55 @@ function onScanError(err) {
   scanError.textContent = "Não foi possível acessar a câmera: " + err.message;
   scanError.hidden = false;
 }
+
+btnManualEntry.addEventListener("click", () => {
+  stopScan();
+  scanDialog.close();
+  manualForm.reset();
+  manualError.hidden = true;
+  manualDialog.showModal();
+  manualSecret.focus();
+});
+
+btnCancelManual.addEventListener("click", () => {
+  manualDialog.close();
+});
+
+function normalizeSecret(raw) {
+  return raw.toUpperCase().replace(/[^A-Z2-7]/g, "");
+}
+
+manualForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const secret = normalizeSecret(manualSecret.value);
+  const account = manualAccount.value.trim();
+  const issuer = manualIssuer.value.trim();
+  const digits = parseInt(manualDigits.value, 10);
+  const period = parseInt(manualPeriod.value, 10) || 30;
+  const algorithm = manualAlgorithm.value;
+
+  if (!secret || base32Decode(secret).length === 0) {
+    manualError.textContent = "Chave secreta inválida. Verifique e tente novamente.";
+    manualError.hidden = false;
+    return;
+  }
+
+  const newAccount = { issuer, account, secret, algorithm, digits, period };
+  try {
+    await generateTOTP(secret, { digits, period, algorithm });
+  } catch {
+    manualError.textContent = "Não foi possível gerar um código com essa chave.";
+    manualError.hidden = false;
+    return;
+  }
+
+  await addAccount(newAccount);
+  await loadAndRender();
+  manualDialog.close();
+  const label = issuer || account || "conta";
+  showToast(`${label} adicionada`);
+  statusLiveEl.textContent = `Conta ${label} adicionada`;
+});
 
 btnCancelConfirm.addEventListener("click", () => {
   pendingAccount = null;
